@@ -30,3 +30,5 @@ num_t do_sub(int sign_a, int num_a, int sign_b, int num_b);
 num_t do_div(int sign_a, long num_a, int sign_b, long num_b);
 num_t do_mul(int sign_a, long num_a, int sign_b, long num_b);
 num_t do_and(int sign_a, int num_a, int sign_b, int num_b);
+
+void print_status();

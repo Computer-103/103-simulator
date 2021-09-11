@@ -18,6 +18,7 @@ num_t reg_c;
 num_t reg_d;
 
 num_t reg_pc;
+num_t reg_op;
 
 int switch_output_numeral;
 
@@ -96,17 +97,18 @@ void init_machine() {
 }
 
 void run_machine() {
-    num_t op, c1, c2;
+    num_t c1, c2;
     num_t op1, op2;
     while (1) {
         // 1
         reg_addr = reg_pc;
+        reg_pc = reg_pc + 1;
         
         // 2
         reg_c = machine_mem[reg_addr];
-        op = (reg_c >> 24) & 0x3f;
-        op1 = op >> 3;
-        op2 = op & 0x7;
+        reg_op = (reg_c >> 24) & 0x3f;
+        op1 = reg_op >> 3;
+        op2 = reg_op & 0x7;
         c1 = (reg_c >> 12) & 0xfff;
         c2 = (reg_c) & 0xfff;
         
@@ -122,7 +124,7 @@ void run_machine() {
             }
 
             int sign_a, sign_b;
-            if (op == 5 || op == 7) {
+            if (reg_op == 5 || reg_op == 7) {
                 sign_a = 1;
                 sign_b = 1;
             } else {
@@ -131,54 +133,124 @@ void run_machine() {
             }
 
             if (op2 == OP_ADD) {
-                
+                reg_c = do_add(sign_a, reg_a & 0x3fffffff, sign_b, reg_b & 0x3fffffff);
             } else if (op2 == OP_SUB) {
-
+                reg_c = do_sub(sign_a, reg_a & 0x3fffffff, sign_b, reg_b & 0x3fffffff);
             } else if (op2 == OP_DIV) {
-
+                reg_c = do_div(sign_a, reg_a & 0x3fffffff, sign_b, reg_b & 0x3fffffff);
             } else if (op2 == OP_MUL) {
-
+                reg_c = do_mul(sign_a, reg_a & 0x3fffffff, sign_b, reg_b & 0x3fffffff);
             } else if (op2 == OP_AND) {
-
+                reg_c = do_and(sign_a, reg_a & 0x3fffffff, sign_b, reg_b & 0x3fffffff);
             }
 
             reg_b = reg_c;
 
-            if (op2 == 0 || op2 == 2 || op == 4 || op == 6) {
+            if (op2 == 0 || op2 == 2 || reg_op == 4 || reg_op == 6) {
                 machine_mem[reg_addr] = reg_c;
             }
-            if (op == 4 || op == 6) {
+            if (reg_op == 4 || reg_op == 6) {
                 output_reg_c();
             }
 
-        // } else if (op == 007 || op == 027) {
+        } else if (reg_op == 007 || reg_op == 027) {
+            // TODO: not support input
+            reg_addr = c2;
+            machine_mem[reg_addr] = 0001234567;
 
-        // } else if (op == 005 || op == 015) {
+        } else if (reg_op == 005 || reg_op == 015) {
+            reg_addr = c1;
+            reg_c = machine_mem[reg_addr];
+            reg_addr = c2;
+            machine_mem[reg_addr] = reg_c;
+            reg_b = reg_c;
 
-        // } else if (op == 045 || op == 055) {
+        } else if (reg_op == 045 || reg_op == 055) {
+            reg_addr = c1;
+            reg_c = machine_mem[reg_addr];
+            reg_addr = c2;
+            machine_mem[reg_addr] = reg_c;
+            output_reg_c();
 
-        // } else if (op == 024) {
+        } else if (reg_op == 024) {
+            reg_pc = c1;
+            reg_addr = c2;
+            reg_c = reg_b;
+            machine_mem[reg_addr] = reg_c;
 
-        // } else if (op == 064) {
+        } else if (reg_op == 064) {
+            reg_pc = c1;
+            reg_addr = c2;
+            reg_c = reg_b;
+            machine_mem[reg_addr] = reg_c;
+            output_reg_c();
 
-        // } else if (op == 074) {
+        } else if (reg_op == 074) {
+            reg_pc = c2;
+            reg_b = reg_b & 0x3fffffff;
 
-        // } else if (op == 034) {
+        } else if (reg_op == 034) {
+            if (reg_b & 0x40000000) {
+                reg_pc = c1;
+            } else {
+                reg_pc = c2;
+            }
 
-        // } else if (op == 004 || op == 014 || op == 044) {
+        } else if (reg_op == 004 || reg_op == 014 || reg_op == 044) {
+            reg_pc = c1;
+            reg_a = reg_c;
+            reg_addr = c2;
+            reg_c = machine_mem[reg_addr];
+            reg_b = reg_c;
+            break;
 
-        // } else if (op == 054) {
-            
-        // } else if (op == 037) {
+        } else if (reg_op == 054) {
+            reg_pc = c1;
+            reg_a = reg_c;
+            reg_a = reg_a & 0x3fffffff;
+            reg_addr = c2;
+            reg_c = machine_mem[reg_addr];
+            reg_b = reg_c;
+            reg_b = reg_b & 0x3fffffff;
+            break;
 
-        // } else if (op == 057) {
+        } else if (reg_op == 037) {
+            reg_addr = c1;
+            reg_c = machine_mem[reg_addr];
+            reg_addr = c2;
+            reg_a = reg_c;
+            reg_c = reg_b;
+            break;
 
-        // } else if (op == 077) {
+        } else if (reg_op == 057) {
+            reg_addr = c1;
+            reg_c = machine_mem[reg_addr];
+            reg_addr = c2;
+            reg_a = reg_c;
+            reg_c = machine_mem[reg_addr];
+            reg_b = reg_c;
+            reg_a = reg_a & 0x3fffffff;
+            reg_b = reg_b & 0x3fffffff;
+            break;
+
+        } else if (reg_op == 077) {
+            reg_addr = c1;
+            reg_c = machine_mem[reg_addr];
+            reg_addr = c2;
+            reg_a = reg_c;
+            reg_c = reg_b;
+            reg_a = reg_a & 0x3fffffff;
+            reg_b = reg_b & 0x3fffffff;
+            break;
 
         } else {
+            fprintf(stderr, "unknow reg_op code\n");
             exit(EXIT_FAILURE);
         }
+        print_status();
     }
+
+    print_status();
 }
 
 void init_output() {
@@ -271,4 +343,12 @@ num_t do_and(int sign_a, int num_a, int sign_b, int num_b) {
     int res = num_b & num_a;
     num_t ans = res | ((sign_b < 0) << 30);
     return ans;
+}
+
+void print_status() {
+    printf("pc: %04o\t", reg_pc);
+    printf("addr: %04o\t", reg_addr);
+    printf("op: %02o\t", reg_op);
+    printf("c: %c %010o", (reg_c & 0x40000000) ? '-' : '+', reg_c & 0x3fffffff);
+    printf("\n");
 }
