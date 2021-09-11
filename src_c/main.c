@@ -13,13 +13,15 @@ int flag_decimal = 0;
 
 static char short_options[] = "s:d";
 static struct option long_options[] = {
-    {"start",   required_argument,  0,              's'},
-    {"decimal", no_argument,        &flag_decimal,  'd'},
-    {0,         0,                  0,               0 },
+    {"start",   required_argument,  0,  's'},
+    {"decimal", no_argument,        0,  'd'},
+    {0,         0,                  0,   0 },
 };
 
 int main(int argc, char ** argv) {
     init_machine();
+
+    set_output_numeral(OCTAL);
 
     while (1) {
         int c = getopt_long(argc, argv, short_options, long_options, NULL);
@@ -35,24 +37,23 @@ int main(int argc, char ** argv) {
                 err(EXIT_FAILURE, "%s", optarg);
             }
             set_pc(start_addr);
+        } else if (c == 'd') {
+            set_output_numeral(DECIMAL);
 
         } else {
+            printf("%c\n", c);
             fprintf(stderr, "Usage: %s [-s <start_addr>] [-d] <tape_file>\n", argv[0]);
             exit(EXIT_FAILURE);
         }
     }
 
     if (optind >= argc) {
-        fprintf(stderr, "Usage: %s [-s <start_addr>] [-d] <tape_file>\n", argv[0]);
+        fprintf(stderr, "1Usage: %s [-s <start_addr>] [-d] <tape_file>\n", argv[0]);
         exit(EXIT_FAILURE);
     }
 
     setup_mem(argv[optind]);
-    if (flag_decimal) {
-        set_output_numeral(DECIMAL);
-    } else {
-        set_output_numeral(OCTAL);
-    }
+    print_mem();
 
     run_machine();
 
