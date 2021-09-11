@@ -124,7 +124,7 @@ void run_machine() {
             }
 
             int sign_a, sign_b;
-            if (reg_op == 5 || reg_op == 7) {
+            if (op1 == 5 || op1 == 7) {
                 sign_a = 1;
                 sign_b = 1;
             } else {
@@ -146,10 +146,10 @@ void run_machine() {
 
             reg_b = reg_c;
 
-            if (op2 == 0 || op2 == 2 || reg_op == 4 || reg_op == 6) {
+            if (op1 == 0 || op1 == 2 || op1 == 4 || op1 == 6) {
                 machine_mem[reg_addr] = reg_c;
             }
-            if (reg_op == 4 || reg_op == 6) {
+            if (op1 == 4 || op1 == 6) {
                 output_reg_c();
             }
 
@@ -254,7 +254,8 @@ void run_machine() {
 }
 
 void init_output() {
-    typewriter = fopen("103-output.txt", "w");
+    // typewriter = fopen("103-output.txt", "w");
+    typewriter = stdout;
 }
 
 void output_reg_c() {
