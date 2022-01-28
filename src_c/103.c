@@ -7,7 +7,8 @@
 #include "103.h"
 #include "tape.h"
 
-FILE * typewriter;
+FILE * output_file;
+FILE * input_file;
 
 num_t * machine_mem;
 num_t reg_addr;
@@ -29,57 +30,8 @@ void set_pc(int val) {
 void set_output_numeral(int val) {
     switch_output_numeral = val;
 }
-
 void init_mem() {
     machine_mem = malloc(sizeof(num_t) * 04000);
-}
-
-void setup_mem(char * tape_filename) {
-    FILE * tape_file = fopen(tape_filename, "rb");
-    if (!tape_file) {
-        err(EXIT_FAILURE, "%s", tape_filename);
-    }
-
-    char ch;
-    while ((ch = fgetc(tape_file)) != EOF) {
-        if (ch == SPACE) {
-            // nothing to do
-        } else if (ch == POS) {
-            reg_c <<= 3;
-            reg_c |= 0x6;
-        } else if (ch == NEG) {
-            reg_c <<= 3;
-            reg_c |= 0x7;
-        } else if (ch == NUM0) {
-            reg_c <<= 3;
-            reg_c |= 0x0;
-        } else if (ch == NUM1) {
-            reg_c <<= 3;
-            reg_c |= 0x1;
-        } else if (ch == NUM2) {
-            reg_c <<= 3;
-            reg_c |= 0x2;
-        } else if (ch == NUM3) {
-            reg_c <<= 3;
-            reg_c |= 0x3;
-        } else if (ch == NUM4) {
-            reg_c <<= 3;
-            reg_c |= 0x4;
-        } else if (ch == NUM5) {
-            reg_c <<= 3;
-            reg_c |= 0x5;
-        } else if (ch == NUM6) {
-            reg_c <<= 3;
-            reg_c |= 0x6;
-        } else if (ch == NUM7) {
-            reg_c <<= 3;
-            reg_c |= 0x7;
-        } else if (ch == SET_ADD) {
-            reg_addr = reg_c & 0xfff;
-        } else if (ch == WRITE) {
-            machine_mem[reg_addr] = reg_c;
-        }
-    }
 }
 
 void print_mem() {
@@ -89,11 +41,6 @@ void print_mem() {
         fprintf(mem_file, "%c ", (i & 0x40000000)? '-' : '+');
         fprintf(mem_file, "%010o\n", machine_mem[i] & 0x3fffffff);
     }
-}
-
-void init_machine() {
-    init_mem();
-    init_output();
 }
 
 void run_machine() {
@@ -150,13 +97,13 @@ void run_machine() {
                 machine_mem[reg_addr] = reg_c;
             }
             if (op1 == 4 || op1 == 6) {
-                output_reg_c();
+                do_output_reg_c();
             }
 
         } else if (reg_op == 007 || reg_op == 027) {
             // TODO: not support input
             reg_addr = c2;
-            machine_mem[reg_addr] = 0001234567;
+            do_input(1);
 
         } else if (reg_op == 005 || reg_op == 015) {
             reg_addr = c1;
@@ -170,7 +117,7 @@ void run_machine() {
             reg_c = machine_mem[reg_addr];
             reg_addr = c2;
             machine_mem[reg_addr] = reg_c;
-            output_reg_c();
+            do_output_reg_c();
 
         } else if (reg_op == 024) {
             reg_pc = c1;
@@ -183,7 +130,7 @@ void run_machine() {
             reg_addr = c2;
             reg_c = reg_b;
             machine_mem[reg_addr] = reg_c;
-            output_reg_c();
+            do_output_reg_c();
 
         } else if (reg_op == 074) {
             reg_pc = c2;
@@ -253,23 +200,64 @@ void run_machine() {
     print_status();
 }
 
-void init_output() {
-    // typewriter = fopen("103-output.txt", "w");
-    typewriter = stdout;
+void do_input(int input_once) {
+    char ch;
+    while ((ch = fgetc(input_file)) != EOF) {
+        if (ch == SPACE) {
+            // nothing to do
+        } else if (ch == POS) {
+            reg_c <<= 3;
+            reg_c |= 0x6;
+        } else if (ch == NEG) {
+            reg_c <<= 3;
+            reg_c |= 0x7;
+        } else if (ch == NUM0) {
+            reg_c <<= 3;
+            reg_c |= 0x0;
+        } else if (ch == NUM1) {
+            reg_c <<= 3;
+            reg_c |= 0x1;
+        } else if (ch == NUM2) {
+            reg_c <<= 3;
+            reg_c |= 0x2;
+        } else if (ch == NUM3) {
+            reg_c <<= 3;
+            reg_c |= 0x3;
+        } else if (ch == NUM4) {
+            reg_c <<= 3;
+            reg_c |= 0x4;
+        } else if (ch == NUM5) {
+            reg_c <<= 3;
+            reg_c |= 0x5;
+        } else if (ch == NUM6) {
+            reg_c <<= 3;
+            reg_c |= 0x6;
+        } else if (ch == NUM7) {
+            reg_c <<= 3;
+            reg_c |= 0x7;
+        } else if (ch == SET_ADD) {
+            reg_addr = reg_c & 0xfff;
+        } else if (ch == WRITE) {
+            machine_mem[reg_addr] = reg_c;
+            if (input_once) break;
+        } else if (ch == END_ARR) {
+            break;
+        }
+    }
 }
 
-void output_reg_c() {
-    fprintf(typewriter, "%c ", (reg_c & 0x40000000) ? '-' : '+');
+void do_output_reg_c() {
+    fprintf(output_file, "%c", (reg_c & 0x40000000) ? '-' : '+');
     if (switch_output_numeral == DECIMAL) {
         for (int i = 26; i >= 0; i -= 4) {
-            fprintf(typewriter, "%d", (reg_c >> i) & 0xF);
+            fprintf(output_file, "%d", (reg_c >> i) & 0xF);
         }
     } else if (switch_output_numeral == OCTAL) {
         for (int i = 27; i >= 0; i -= 3) {
-            fprintf(typewriter, "%d", (reg_c >> i) & 0x7);
+            fprintf(output_file, "%d", (reg_c >> i) & 0x7);
         }
     }
-    fprintf(typewriter, "\n");
+    fprintf(output_file, "\n");
 }
 
 num_t do_add(int sign_a, int num_a, int sign_b, int num_b) {

@@ -19,9 +19,8 @@ static struct option long_options[] = {
 };
 
 int main(int argc, char ** argv) {
-    init_machine();
-
     set_output_numeral(OCTAL);
+    set_pc(0);
 
     while (1) {
         int c = getopt_long(argc, argv, short_options, long_options, NULL);
@@ -52,12 +51,18 @@ int main(int argc, char ** argv) {
         exit(EXIT_FAILURE);
     }
 
-    setup_mem(argv[optind]);
-    print_mem();
+    input_file = fopen(argv[optind], "rb");
+    if (!input_file) {
+        err(EXIT_FAILURE, "%s", argv[optind]);
+    }
+    output_file = fopen("output.103", "w");
+    
+    init_mem();
 
-    run_machine();
+    do_input(0);
+    run_machine(input_file);
 
-    print_mem();
+    // print_mem();
 
     exit(EXIT_SUCCESS);
 }
