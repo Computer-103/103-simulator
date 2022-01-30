@@ -161,7 +161,16 @@ void run_machine() {
             reg_b = reg_b & 0x3fffffff;
             break;
 
-        } else if (reg_op == 037) {
+        } else if (reg_op == 017) {
+            reg_addr = c1;
+            reg_c = machine_mem[reg_addr];
+            reg_addr = c2;
+            reg_a = reg_c;
+            reg_c = machine_mem[reg_addr];
+            reg_b = reg_c;
+            break;
+
+        }  else if (reg_op == 037) {
             reg_addr = c1;
             reg_c = machine_mem[reg_addr];
             reg_addr = c2;
